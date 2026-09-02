@@ -1175,6 +1175,11 @@ function CreDocument:setTextHyphenationForceAlgorithmic(toggle)
     self._document:setStringProperty("crengine.textlang.hyphenation.force.algorithmic", toggle and 1 or 0)
 end
 
+function CreDocument:setHungarianExtendedHyphenation(toggle)
+    logger.dbg("CreDocument: set Hungarian extended hyphenation", toggle)
+    self._document:setStringProperty("crengine.textlang.hyphenation.hungarian.extended", toggle and 1 or 0)
+end
+
 function CreDocument:getTextMainLangDefaultHyphDictionary()
     local main_lang_tag, main_lang_active_hyph_dict, loaded_lang_infos = cre.getTextLangStatus() -- luacheck: no unused
     return loaded_lang_infos[main_lang_tag] and loaded_lang_infos[main_lang_tag].hyph_dict_name

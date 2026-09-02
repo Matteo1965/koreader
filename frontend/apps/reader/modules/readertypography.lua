@@ -128,6 +128,7 @@ function ReaderTypography:init()
     self.hyph_trust_soft_hyphens = false
     self.hyph_soft_hyphens_only = false
     self.hyph_force_algorithmic = false
+    self.hungarian_extended_hyphenation = false
     self.floating_punctuation = 0
 
     local info_text = _([[
@@ -438,6 +439,24 @@ These settings will apply to all books with any hyphenation dictionary.
         end,
     })
     table.insert(hyphenation_submenu, self.ui.userhyph:getMenuEntry())
+    table.insert(hyphenation_submenu, {
+        text_func = function()
+            return "Magyar elválasztás: " .. (self.hungarian_extended_hyphenation and "Kiterjesztett" or "Alap")
+        end,
+        callback = function()
+            self.hungarian_extended_hyphenation = not self.hungarian_extended_hyphenation
+            self.ui.document:setHungarianExtendedHyphenation(self.hungarian_extended_hyphenation)
+            self.ui:handleEvent(Event:new("UpdatePos"))
+        end,
+        checked_func = function()
+            return self.hungarian_extended_hyphenation
+        end,
+        enabled_func = function()
+            return self.hyphenation and self.text_lang_tag ~= nil
+                and (self.text_lang_tag == "hu" or self.text_lang_tag == "hun"
+                    or self.text_lang_tag:match("^hu[-_]") ~= nil)
+        end,
+    })
     table.insert(hyphenation_submenu, {
         text_func = function()
             -- Show the current language default hyph dict (ie: English_US for zh)
@@ -756,6 +775,13 @@ function ReaderTypography:onReadSettings(config)
     end
     self.ui.document:setTextHyphenationForceAlgorithmic(self.hyph_force_algorithmic)
 
+    if config:has("hungarian_extended_hyphenation") then
+        self.hungarian_extended_hyphenation = config:isTrue("hungarian_extended_hyphenation")
+    else
+        self.hungarian_extended_hyphenation = G_reader_settings:isTrue("hungarian_extended_hyphenation")
+    end
+    self.ui.document:setHungarianExtendedHyphenation(self.hungarian_extended_hyphenation)
+
     -- These are global only settings (a bit complicated to make them per-document)
     self.ui.document:setHyphLeftHyphenMin(G_reader_settings:readSetting("hyph_left_hyphen_min") or 0)
     self.ui.document:setHyphRightHyphenMin(G_reader_settings:readSetting("hyph_right_hyphen_min") or 0)
@@ -854,6 +880,7 @@ function ReaderTypography:onSaveSettings()
     self.ui.doc_settings:saveSetting("hyph_trust_soft_hyphens", self.hyph_trust_soft_hyphens)
     self.ui.doc_settings:saveSetting("hyph_soft_hyphens_only", self.hyph_soft_hyphens_only)
     self.ui.doc_settings:saveSetting("hyph_force_algorithmic", self.hyph_force_algorithmic)
+    self.ui.doc_settings:saveSetting("hungarian_extended_hyphenation", self.hungarian_extended_hyphenation)
     self.ui.doc_settings:saveSetting("floating_punctuation", self.floating_punctuation)
 end
 
