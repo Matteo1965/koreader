@@ -1,6 +1,6 @@
 # Kobo build artifacts use the GitHub Actions run number as the canonical build number.
 name: Kobo build
-run-name: Kobo build #${{ github.run_number }} – CrossPoint Hungarian priority rules
+run-name: Kobo build #${{ github.run_number }} – corrected CrossPoint Hungarian priority rules
 
 on:
   workflow_dispatch:
@@ -58,14 +58,14 @@ jobs:
           grep -q 'hu_source, hu_source_len, word->t.len-1' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           git diff --check
 
-      - name: Apply CrossPoint Hungarian priority rules
+      - name: Apply corrected CrossPoint Hungarian priority rules
         run: |
-          python3 .github/scripts/apply_hungarian_kobo_build14.py
+          python3 .github/scripts/apply_hungarian_kobo_build15.py
           grep -q 'huNearbyPatternBreakWins' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
-          grep -q 'meggyből' .github/scripts/apply_hungarian_kobo_build14.py
-          grep -q 'bridzzsel' .github/scripts/apply_hungarian_kobo_build14.py
-          grep -q 'eddzen' .github/scripts/apply_hungarian_kobo_build14.py
-          grep -q 'rosszfiú' .github/scripts/apply_hungarian_kobo_build14.py
+          grep -q 'meggyből' .github/scripts/apply_hungarian_kobo_build15.py
+          grep -q 'bridzzsel' .github/scripts/apply_hungarian_kobo_build15.py
+          grep -q 'eddzen' .github/scripts/apply_hungarian_kobo_build15.py
+          grep -q 'rosszfiú' .github/scripts/apply_hungarian_kobo_build15.py
           grep -q 'hu_source, hu_source_len, word->t.len-1' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           git diff --check
 
@@ -89,7 +89,7 @@ jobs:
       - name: Upload Kobo artifact
         uses: actions/upload-artifact@v7
         with:
-          name: Kobo-build-${{ github.run_number }}-CrossPoint-Hungarian-priority-rules
+          name: Kobo-build-${{ github.run_number }}-Corrected-CrossPoint-Hungarian-priority-rules
           archive: false
           path: koreader-kobo-*.zip
           if-no-files-found: error
