@@ -1,0 +1,51 @@
+name: Kobo build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: kobo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kobo:
+    name: Kobo ARM build
+    runs-on: ubuntu-latest
+
+    env:
+      KO_VERSION: v2026.07.2-1-g${{ github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Build Kobo package in official KOReader toolchain image
+        run: |
+          docker pull koreader/kokobo:latest
+          docker run --rm \
+            -v "$PWD:/home/ko/koreader" \
+            -w /home/ko/koreader \
+            -e CI=1 \
+            -e MAKEFLAGS="VERSION=${KO_VERSION}" \
+            koreader/kokobo:latest \
+            bash -lc './kodev release --ignore-translation kobo zip'
+
+      - name: Verify Kobo package
+        run: |
+          set -eux
+          ls -lh koreader-kobo-*.zip
+          unzip -l koreader-kobo-*.zip | head -80
+
+      - name: Upload Kobo artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: koreader-kobo-${{ github.sha }}
+          archive: false
+          path: koreader-kobo-*.zip
+          if-no-files-found: error
