@@ -25,6 +25,14 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Apply Hungarian Kobo build 3 fixes
+        run: |
+          python3 .github/scripts/apply_hungarian_kobo_build3.py
+          grep -q 'Extended Hungarian hyphenation' frontend/apps/reader/modules/readertypography.lua
+          grep -q 'huKnownFalseExtendedWord' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'candidate_width += replacement_width' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          git diff --check
+
       - name: Build Kobo package in official KOReader toolchain image
         run: |
           docker pull koreader/kokobo:latest
