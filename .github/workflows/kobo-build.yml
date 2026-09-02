@@ -1,6 +1,6 @@
 # Kobo build artifacts use the GitHub Actions run number as the canonical build number.
 name: Kobo build
-run-name: Kobo build #${{ github.run_number }} – Hungarian exact rendered-prefix measurement
+run-name: Kobo build #${{ github.run_number }} – Hungarian full-context width fix
 
 on:
   workflow_dispatch:
@@ -50,6 +50,14 @@ jobs:
           grep -q 'word->width = rendered_prefix_width' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           git diff --check
 
+      - name: Apply Hungarian full-context width fix
+        run: |
+          python3 .github/scripts/apply_hungarian_kobo_build13.py
+          grep -q 'const lChar32 \* hu_source = srcline->t.text + word->t.start' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'int hu_source_len = srcline->t.len - word->t.start' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'hu_source, hu_source_len, word->t.len-1' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          git diff --check
+
       - name: Build Kobo package in official KOReader toolchain image
         run: |
           docker pull koreader/kokobo:latest
@@ -70,7 +78,7 @@ jobs:
       - name: Upload Kobo artifact
         uses: actions/upload-artifact@v7
         with:
-          name: Kobo-build-${{ github.run_number }}-Hungarian-exact-rendered-prefix
+          name: Kobo-build-${{ github.run_number }}-Hungarian-full-context-width-fix
           archive: false
           path: koreader-kobo-*.zip
           if-no-files-found: error
