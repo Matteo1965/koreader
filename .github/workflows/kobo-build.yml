@@ -1,3 +1,4 @@
+# Kobo build artifacts use the GitHub Actions run number as the canonical build number.
 name: Kobo build
 
 on:
