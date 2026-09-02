@@ -634,14 +634,14 @@ Show translated text in TextViewer, with alternate translations
 @string source_lang[opt="auto"] (`"en"`, `"fr"`, `…`) or `"auto"` to auto-detect source language
 @string target_lang[opt] (`"en"`, `"fr"`, `…`)
 --]]
-function Translator:showTranslation(text, detailed_view, source_lang, target_lang, ui_highlight, index)
+function Translator:showTranslation(text, detailed_view, source_lang, target_lang, from_highlight, index)
     if Device:hasClipboard() then
         Device.input.setClipboardText(text)
     end
 
     local NetworkMgr = require("ui/network/manager")
     if NetworkMgr:willRerunWhenOnline(function()
-                self:showTranslation(text, detailed_view, source_lang, target_lang, ui_highlight, index)
+                self:showTranslation(text, detailed_view, source_lang, target_lang, from_highlight, index)
             end) then
         return
     end
@@ -650,11 +650,11 @@ function Translator:showTranslation(text, detailed_view, source_lang, target_lan
     -- translation service query.
     local Trapper = require("ui/trapper")
     Trapper:wrap(function()
-        self:_showTranslation(text, detailed_view, source_lang, target_lang, ui_highlight, index)
+        self:_showTranslation(text, detailed_view, source_lang, target_lang, from_highlight, index)
     end)
 end
 
-function Translator:_showTranslation(text, detailed_view, source_lang, target_lang, ui_highlight, index)
+function Translator:_showTranslation(text, detailed_view, source_lang, target_lang, from_highlight, index)
     if not target_lang then
         target_lang = self:getTargetLanguage()
     end
@@ -756,41 +756,47 @@ function Translator:_showTranslation(text, detailed_view, source_lang, target_la
     -- table.insert(output, require("dump")(result)) -- for debugging
     local text_all = table.concat(output, "\n")
 
-    local textviewer, height, buttons_table
+    local textviewer, height, buttons_table, close_callback
     if detailed_view then
         height = math.floor(Screen:getHeight() * 0.8)
         buttons_table = {}
-        if ui_highlight then
-            local function save_note(note_text)
-                UIManager:close(textviewer)
-                if ui_highlight.highlight_dialog then
-                    UIManager:close(ui_highlight.highlight_dialog)
-                    ui_highlight.highlight_dialog = nil
-                end
-                if index then
-                    ui_highlight:editNote(index, false, note_text)
-                else -- new highlight
-                    ui_highlight.selected_text = ui_highlight.selected_text or ui_highlight.selected_text_backup
-                    ui_highlight.selected_text_backup = nil
-                    ui_highlight:addNote(note_text)
-                end
-            end
+        if from_highlight then
+            local ui = require("apps/reader/readerui").instance
             table.insert(buttons_table,
                 {
                     {
                         text = _("Save main translation to note"),
                         callback = function()
-                            save_note(text_main)
+                            UIManager:close(textviewer)
+                            UIManager:close(ui.highlight.highlight_dialog)
+                            ui.highlight.highlight_dialog = nil
+                            if index then
+                                ui.highlight:editNote(index, false, text_main)
+                            else
+                                ui.highlight:addNote(text_main)
+                            end
                         end,
                     },
                     {
                         text = _("Save all to note"),
                         callback = function()
-                            save_note(text_all)
+                            UIManager:close(textviewer)
+                            UIManager:close(ui.highlight.highlight_dialog)
+                            ui.highlight.highlight_dialog = nil
+                            if index then
+                                ui.highlight:editNote(index, false, text_all)
+                            else
+                                ui.highlight:addNote(text_all)
+                            end
                         end,
                     },
                 }
             )
+            close_callback = function()
+                if not ui.highlight.highlight_dialog then
+                    ui.highlight:clear()
+                end
+            end
         end
         if Device:hasClipboard() then
             table.insert(buttons_table,
@@ -822,6 +828,7 @@ function Translator:_showTranslation(text, detailed_view, source_lang, target_la
         height = height,
         add_default_buttons = true,
         buttons_table = buttons_table,
+        close_callback = close_callback,
     }
     UIManager:show(textviewer)
 end

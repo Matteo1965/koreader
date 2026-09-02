@@ -116,6 +116,5 @@ function QRMessage:onTapClose()
     return true
 end
 QRMessage.onAnyKeyPressed = QRMessage.onTapClose
-QRMessage.onClose = QRMessage.onTapClose -- for onHome event
 
 return QRMessage

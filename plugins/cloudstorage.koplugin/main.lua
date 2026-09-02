@@ -13,7 +13,7 @@ local _ = require("gettext")
 
 local Cloud = WidgetContainer:extend{
     name = "cloudstorage",
-    title = _("Cloud storage"),
+    title = _("Cloud storage+"),
     settings_file = DataStorage:getSettingsDir() .. "/cloudstorage.lua",
     settings = nil,
     servers = nil, -- user servers (array)
@@ -131,24 +131,6 @@ function Cloud:onShowCloudStorageList(caller_choose_folder_callback)
     base:show()
 end
 
-function Cloud:uploadFile(server, file_path, success_callback, failure_callback)
-    local provider = server and server.type and self.providers[server.type]
-    if not provider then return end
-    provider.base = util.tableDeepCopy(server)
-    provider.run(function()
-        local code_response = provider.uploadFile(server.url, file_path, nil, true) -- overwrite
-        if type(code_response) == "number" and code_response >= 200 and code_response < 300 then
-            if success_callback then
-                success_callback()
-            end
-        else
-            if failure_callback then
-                failure_callback()
-            end
-        end
-    end)
-end
-
 function Cloud:stopPlugin()
     Cloud.providers = nil
 end
@@ -197,7 +179,7 @@ end
 function Cloud:sync(server, file_path, sync_cb, is_silent, caller_pre_callback)
     local provider = server and server.type and self.providers[server.type]
     if not provider then return end
-    provider.base = util.tableDeepCopy(server)
+    provider.base = server
     provider.run(function()
         if caller_pre_callback then
             caller_pre_callback()

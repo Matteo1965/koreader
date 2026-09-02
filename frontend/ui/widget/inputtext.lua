@@ -776,14 +776,6 @@ function InputText:focus()
     Device:startTextInput()
 end
 
-function InputText:keyBack()
-    if self.parent.onCloseDialog then
-        self.parent:onCloseDialog()
-    else
-        UIManager:close(self.parent)
-    end
-end
-
 -- NOTE: This key_map can be used for keyboards without numeric keys, such as on Kindles with keyboards. It is loosely 'inspired' by the symbol layer on the virtual keyboard but,
 --       we have taken the liberty of making some adjustments since:
 --       * K3 does not have numeric keys (top row) and,
@@ -849,24 +841,17 @@ function InputText:onKeyPress(key)
         elseif key["End"] then
             self:goToEnd()
         elseif key["Home"] then
-            -- If our parent handles Home (e.g., InputDialog), delegate entirely
-            -- to avoid double-firing: once here and once via FocusManager routing.
-            if self.parent and self.parent.onHome then
-                return self.parent:onHome()
-            end
-            self:keyBack()
-            local Event = require("ui/event")
-            UIManager:nextTick(function()
-                UIManager:sendEvent(Event:new("Home"))
-            end)
-        elseif key["KeyHome"] then
             self:goToHome()
         elseif key["Press"] then
             self:addChars("\n")
         elseif key["Tab"] then
             self:addChars("    ")
         elseif key["Back"] then
-            self:keyBack()
+            if self.parent.onCloseDialog then
+                self.parent:onCloseDialog()
+            else
+                UIManager:close(self.parent)
+            end
         else
             handled = false
         end
@@ -901,7 +886,7 @@ function InputText:onKeyPress(key)
             self:downLine()
         elseif key["Press"] then
             self:holdTextBox()
-        elseif key["Home"] or key["KeyHome"] then
+        elseif key["Home"] then
             self:toggleKeyboard()
         elseif key["."] and Device:hasSymKey() then
             -- Kindle does not have a dedicated button for commas
@@ -997,10 +982,6 @@ end
 
 -- Temporarily show/hide the on-screen keyboard, e.g. via Shift/ScreenKB + Home or a lone Sym/ScreenKB press.
 function InputText:toggleKeyboard()
-    local parent = self.parent
-    if parent and parent.shouldDelegateToggleKeyboard and parent:shouldDelegateToggleKeyboard() then
-        return parent:toggleKeyboard()
-    end
     if self:isKeyboardVisible() then
         self:onCloseKeyboard()
     else

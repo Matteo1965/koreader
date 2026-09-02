@@ -927,7 +927,6 @@ function ReaderUI:dealWithLoadDocumentFailure()
 end
 
 function ReaderUI:onHome()
-    UIManager:setSuspendRepaints(false)
     local file = self.document.file
     self:onClose()
     self:showFileManager(file)

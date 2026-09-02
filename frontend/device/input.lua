@@ -141,7 +141,7 @@ local Input = {
             "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
             "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
             "Up", "Down", "Left", "Right", "Press", "Backspace", "End",
-            "Back", "Sym", "AA", "Menu", "KeyHome", "Del", "ScreenKB",
+            "Back", "Sym", "AA", "Menu", "Home", "Del", "ScreenKB",
             "LPgBack", "RPgBack", "LPgFwd", "RPgFwd"
         },
     },
@@ -164,7 +164,6 @@ local Input = {
 
     timer_callbacks = nil, -- instance-specific table, because the object may get destroyed & recreated at runtime
     disable_double_tap = true,
-    allow_concurrent_taps = false,
     tap_interval_override = nil,
 
     -- keyboard state:

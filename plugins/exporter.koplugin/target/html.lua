@@ -1,21 +1,11 @@
 local logger = require("logger")
 local slt2 = require("template/slt2")
-local _ = require("gettext")
 
-local HtmlExporter = require("base"):new{
+-- html exporter
+local HtmlExporter = require("base"):new {
     name = "html",
-    title = _("Html"),
     mimetype = "text/html",
 }
-
-function HtmlExporter:genTargetSubMenu()
-    return {
-        self:genExportToMenuItem(),
-        -- separator
-        self:genCloudStorageMenuItem(),
-        self:genDeleteFileMenuItem(),
-    }
-end
 
 local function format(booknotes)
     local chapters = {}

@@ -106,7 +106,7 @@ function SSH:isRunning()
 end
 
 --- Stops the Dropbear process started by this plugin.
---- @param force boolean If true, also terminates child session processes and kills the server if needed.
+--- @param force boolean If true, forces the process to stop if it doesn't exit gracefully.
 --- @return boolean Success, string|nil Error
 function SSH:stopPlugin(force)
     if not self:isRunning() then
@@ -129,19 +129,18 @@ function SSH:stopPlugin(force)
         return p and util.pathExists("/proc/" .. p)
     end
 
-    local function send(sig, p, include_children)
-        local child_command = include_children and string.format("pkill -%s -P %d; ", sig, p) or ""
-        return os.execute(string.format("%skill -%s %d", child_command, sig, p)) == 0
+    local function send(sig, p)
+        return os.execute(string.format("pkill -%s -P %d && kill -%s %d", sig, p, sig, p)) == 0
     end
 
-    send("TERM", pid, force)
+    send("TERM", pid)
     for _ = 1, 20 do
         if not isProcAlive(pid) then break end
         ffiutil.sleep(0.1)
     end
 
     if isProcAlive(pid) and force then
-        send("KILL", pid, true)
+        send("KILL", pid)
         for _ = 1, 10 do
             if not isProcAlive(pid) then break end
             ffiutil.sleep(0.1)
@@ -166,7 +165,7 @@ function SSH:stopPlugin(force)
 end
 
 function SSH:stop()
-    local ok, err = self:stopPlugin(self.force_kill_clients)
+    local ok, err = self:stopPlugin(false)
     if not ok then
         logger.warn("SSH: graceful stop failed:", err)
         -- If the user chose to force-close all connections, try a forced stop first.
@@ -195,9 +194,7 @@ function SSH:stop()
     end
     if ok then
         UIManager:show(InfoMessage:new{
-            text = self.force_kill_clients
-                   and _("SSH server stopped.")
-                   or  _("SSH server stopped. Any active connections remain until they are closed."),
+            text = _("SSH server stopped."),
             timeout = 2,
         })
     end

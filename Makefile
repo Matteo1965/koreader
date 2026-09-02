@@ -50,6 +50,7 @@ CR3GUI_DATADIR_FILES = $(filter-out $(CR3GUI_DATADIR_EXCLUDES),$(wildcard $(CR3G
 define DATADIR_FILES
 $(CR3GUI_DATADIR_FILES)
 $(OUTPUT_DIR_DATAFILES)
+$(THIRDPARTY_DIR)/kpvcrlib/cr3.css
 endef
 
 # files to link from main directory
@@ -128,7 +129,7 @@ endef
 
 all: base mo
 	install -d $(INSTALL_DIR)/koreader
-	rm -f $(INSTALL_DIR)/koreader/git-rev; echo "$(VERSION)_$(DIST)" > $(INSTALL_DIR)/koreader/git-rev
+	rm -f $(INSTALL_DIR)/koreader/git-rev; echo "$(VERSION)" > $(INSTALL_DIR)/koreader/git-rev
 ifdef ANDROID
 	rm -f android-fdroid-version; echo -e "$(ANDROID_NAME)\n$(ANDROID_VERSION)" > koreader-android-fdroid-latest
 endif

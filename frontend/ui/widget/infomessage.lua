@@ -311,6 +311,5 @@ function InfoMessage:onTapClose()
     end
 end
 InfoMessage.onAnyKeyPressed = InfoMessage.onTapClose
-InfoMessage.onClose = InfoMessage.onTapClose -- for onHome event
 
 return InfoMessage

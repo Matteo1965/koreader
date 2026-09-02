@@ -101,9 +101,9 @@ local MultiInputDialog = InputDialog:extend{
     enter_callback = nil, -- applied to all fields
 }
 
-function MultiInputDialog:init(reinit)
+function MultiInputDialog:init()
     -- init title and buttons in base class
-    InputDialog.init(self, reinit)
+    InputDialog.init(self)
     -- Kick InputDialog's own field out of the layout, we're not using it
     table.remove(self.layout, 1)
     -- Also murder said input field *and* its VK, or we get two of them and shit gets hilariously broken real fast...
@@ -291,7 +291,7 @@ function MultiInputDialog:onKeyboardHeightChanged()
     for i, field in ipairs(self.fields) do -- restore entered text
         field.text = fields[i].text
     end
-    self:init(true)
+    self:init()
     if self.keyboard_visible then
         self:onShowKeyboard()
     end

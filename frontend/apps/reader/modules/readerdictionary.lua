@@ -1150,7 +1150,7 @@ function ReaderDictionary:dismissLookupInfo()
     self.lookup_progress_msg = nil
 end
 
-function ReaderDictionary:onShowDictionaryLookup(selection)
+function ReaderDictionary:onShowDictionaryLookup()
     local buttons = {}
     local preset_names = Presets.getPresets(self.preset_obj)
     if preset_names and #preset_names > 0 then
@@ -1188,7 +1188,7 @@ function ReaderDictionary:onShowDictionaryLookup(selection)
 
     self.dictionary_lookup_dialog = InputDialog:new{
         title = _("Enter a word or phrase to look up"),
-        input = selection or "",
+        input = "",
         input_type = "text",
         buttons = buttons,
     }

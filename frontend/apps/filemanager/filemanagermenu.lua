@@ -27,22 +27,28 @@ local FileManagerMenu = InputContainer:extend{
     registered_widgets = nil, -- array
 }
 
-local function getDefaultMenuButtons()
-    return {
+function FileManagerMenu:init()
+    self.menu_items = {
         ["KOMenu:menu_buttons"] = {
             -- top menu
         },
         -- items in top menu
-        filemanager_settings = { icon = "appbar.filebrowser" },
-        setting = { icon = "appbar.settings" },
-        tools = { icon = "appbar.tools" },
-        search = { icon = "appbar.search" },
-        main = { icon = "appbar.menu" },
+        filemanager_settings = {
+            icon = "appbar.filebrowser",
+        },
+        setting = {
+            icon = "appbar.settings",
+        },
+        tools = {
+            icon = "appbar.tools",
+        },
+        search = {
+            icon = "appbar.search",
+        },
+        main = {
+            icon = "appbar.menu",
+        },
     }
-end
-
-function FileManagerMenu:init()
-    self.menu_items = getDefaultMenuButtons()
 
     self.registered_widgets = {}
 
@@ -61,15 +67,7 @@ function FileManagerMenu:registerKeyEvents()
     end
 end
 
-function FileManagerMenu:onPhysicalKeyboardConnected()
-    self.key_events = {}
-    self:registerKeyEvents()
-    if self.menu_container then
-        self:onCloseFileManagerMenu()
-    end
-    self.tab_item_table = nil
-end
-FileManagerMenu.onPhysicalKeyboardDisconnected = FileManagerMenu.onPhysicalKeyboardConnected
+FileManagerMenu.onPhysicalKeyboardConnected = FileManagerMenu.registerKeyEvents
 
 -- NOTE: FileManager emits a SetDimensions on init, it's our only caller
 function FileManagerMenu:initGesListener()
@@ -149,9 +147,6 @@ function FileManagerMenu:onOpenLastDoc()
 end
 
 function FileManagerMenu:setUpdateItemTable()
-    for k, v in pairs(getDefaultMenuButtons()) do
-        self.menu_items[k] = v
-    end
     local FileChooser = self.ui.file_chooser
 
     -- setting tab
@@ -825,6 +820,13 @@ To:
         })
     end
 
+    self.menu_items.cloud_storage = {
+        text = _("Cloud storage"),
+        callback = function()
+            self:onShowCloudStorage()
+        end,
+    }
+
     -- main menu tab
     self.menu_items.open_last_document = {
         text_func = function()
@@ -1004,17 +1006,12 @@ function FileManagerMenu:getStartWithMenuTable()
     end
     return {
         text_func = function()
-            local idx = 1 -- "filemanager" by default
-            local start_with = G_reader_settings:readSetting("start_with")
-            if start_with then
-                for i, v in ipairs(start_withs) do
-                    if v[2] == start_with then
-                        idx = i
-                        break
-                    end
+            local start_with = G_reader_settings:readSetting("start_with") or "filemanager"
+            for i, v in ipairs(start_withs) do
+                if v[2] == start_with then
+                    return T(_("Start with: %1"), v[1])
                 end
             end
-            return T(_("Start with: %1"), start_withs[idx][1])
         end,
         sub_item_table = sub_item_table,
     }
@@ -1134,12 +1131,13 @@ function FileManagerMenu:onMenuSearch()
 end
 
 function FileManagerMenu:registerToMainMenu(widget)
-    for _, w in ipairs(self.registered_widgets) do
-        if w == widget then
-            return
-        end
-    end
     table.insert(self.registered_widgets, widget)
+end
+
+function FileManagerMenu:onShowCloudStorage()
+    local CloudStorage = require("apps/cloudstorage/cloudstorage")
+    UIManager:show(CloudStorage:new{ ui = self.ui })
+    return true
 end
 
 return FileManagerMenu

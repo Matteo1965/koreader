@@ -298,13 +298,11 @@ function AutoDim:ramp_task()
     local fl_level = Powerd:frontlightIntensity()
     if fl_level > self.autodim_end_fl then
         fl_level = fl_level - 1
-        Powerd:setIntensity(fl_level, true) -- don't broadcast "FrontlightStateChanged" event for footer
+        Powerd:setIntensity(fl_level)
         self.ramp_event_countdown = self.ramp_event_countdown - 1
         if self.ramp_event_countdown <= 0 then
             -- Update footer on every self.ramp_event_countdown call
-            if self.ui.view then
-                self.ui.view.footer:maybeUpdateFooter()
-            end
+            UIManager:broadcastEvent("UpdateFooter")
             self.ramp_event_countdown = self.ramp_event_countdown_startvalue
             self.last_ramp_scheduling_time = nil
         end

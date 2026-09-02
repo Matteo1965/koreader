@@ -1,61 +1,79 @@
+local BD = require("ui/bidi")
 local DataStorage = require("datastorage")
 local DocSettings = require("docsettings")
 local InputDialog = require("ui/widget/inputdialog")
+local InfoMessage = require("ui/widget/infomessage")
 local SQ3 = require("lua-ljsqlite3/init")
 local UIManager = require("ui/uimanager")
 local datetime = require("datetime")
+local ffiUtil = require("ffi/util")
 local logger = require("logger")
 local util = require("util")
 local _ = require("gettext")
+local T = ffiUtil.template
 
 local db_location = DataStorage:getSettingsDir() .. "/statistics.sqlite3"
 
-local XMNoteExporter = require("base"):new{
+-- xmnote exporter
+local XMNoteExporter = require("base"):new {
     name = "xmnote",
-    title = _("XMNote"),
     is_remote = true,
-    server_port = 8080,
-    help_text = _([[Before starting the export process, please make sure that your mobile and KOReader are connected to the same local network. Open XMNote and go to "My" - "Import Highlights" - "Import via API". At the bottom of the interface, you will find the IP address of your mobile device. Enter this IP address into KOReader to complete the configuration.]]),
+    server_port = 8080
 }
 
-function XMNoteExporter:genTargetSubMenu()
-    local dialog_title = _("Set XMNote IP")
-    return {
-        self:genExportToMenuItem(),
-        self:genHelpMenuItem(),
-        -- separator
-        {
-            text = dialog_title,
-            keep_menu_open = true,
-            callback = function(touchmenu_instance)
-                local url_dialog
-                url_dialog = InputDialog:new{
-                    title = dialog_title,
-                    input = self.settings.ip,
-                    buttons = {
-                        {
+function XMNoteExporter:getMenuTable()
+    return  {
+        text = _("XMNote"),
+        checked_func = function() return self:isEnabled() end,
+        sub_item_table = {
+            {
+                text = _("Set XMNote IP"),
+                keep_menu_open = true,
+                callback = function()
+                    local url_dialog
+                    url_dialog = InputDialog:new {
+                        title = _("Set XMNote IP"),
+                        input = self.settings.ip,
+                        buttons = {
                             {
-                                text = _("Cancel"),
-                                id = "close",
-                                callback = function()
-                                    UIManager:close(url_dialog)
-                                end,
-                            },
-                            {
-                                text = _("Set IP"),
-                                callback = function()
-                                    self.settings.ip = url_dialog:getInputText()
-                                    UIManager:close(url_dialog)
-                                    touchmenu_instance:updateItems()
-                                end,
-                            },
-                        },
-                    },
-                }
-                UIManager:show(url_dialog)
-                url_dialog:onShowKeyboard()
-            end
-        },
+                                {
+                                    text = _("Cancel"),
+                                    callback = function()
+                                        UIManager:close(url_dialog)
+                                    end
+                                },
+                                {
+                                    text = _("Set IP"),
+                                    callback = function()
+                                        local ip = url_dialog:getInputText()
+                                        self.settings.ip = ip
+                                        self:saveSettings()
+                                        UIManager:close(url_dialog)
+                                    end
+                                }
+                            }
+                        }
+                    }
+                    UIManager:show(url_dialog)
+                    url_dialog:onShowKeyboard()
+                end
+            } ,
+            {
+                text = _("Export to XMNote"),
+                checked_func = function() return self:isEnabled() end,
+                callback = function() self:toggleEnabled() end,
+            },
+            {
+                text = _("Help"),
+                keep_menu_open = true,
+                callback = function()
+                    UIManager:show(InfoMessage:new {
+                        text = T(_([[Before starting the export process, please make sure that your mobile and KOReader are connected to the same local network. Open XMNote and go to "My" - "Import Highlights" - "Import via API". At the bottom of the interface, you will find the IP address of your mobile device. Enter this IP address into KOReader to complete the configuration.]])
+                    , BD.dirpath(DataStorage:getDataDir()))
+                    })
+                end
+            }
+        }
     }
 end
 

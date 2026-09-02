@@ -1,26 +1,14 @@
-local ffiUtil = require("ffi/util")
-local T = ffiUtil.template
+local util = require("ffi/util")
+local T = util.template
 local _ = require("gettext")
 
-local ClippingsExporter = require("base"):new{
+-- myClippings exporter
+local ClippingsExporter = require("base"):new {
     name = "myClippings",
-    title = _("myClippings"),
     extension = "txt",
     mimetype = "text/plain",
-    all_books_title = "myClippings",
+    all_books_title = "myClippings"
 }
-
-function ClippingsExporter:genTargetSubMenu()
-    return {
-        self:genExportToMenuItem(),
-        -- separator
-        self:genCloudStorageMenuItem(),
-        self:genDeleteFileMenuItem(),
-        -- separator
-        self:genToggleMenuItem(_("Overwrite export file"), "overwrite_export_file"),
-        self:genToggleMenuItem(_("Use Kindle export file name"), "kindle_export_file"),
-    }
-end
 
 local function format(booknotes)
     local tbl = {}
@@ -56,18 +44,9 @@ local function format(booknotes)
     return table.concat(tbl, "\n")
 end
 
-function ClippingsExporter:getFilePath()
-    if self.filepath then
-        if self.settings.kindle_export_file then
-            return ffiUtil.dirname(self.filepath) .. "/My Clippings.txt"
-        end
-        return self.filepath .. "." .. self.extension
-    end
-end
-
 function ClippingsExporter:export(t)
     local path = self:getFilePath(t)
-    local file = io.open(path, self.settings.overwrite_export_file and "w" or "a")
+    local file = io.open(path, "a")
     if not file then return false end
     for __, booknotes in ipairs(t) do
         local content = format(booknotes)

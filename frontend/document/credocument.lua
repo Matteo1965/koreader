@@ -949,8 +949,8 @@ function CreDocument:getPageLinks(internal_links_only)
     return self._document:getPageLinks(internal_links_only)
 end
 
-function CreDocument:getLinkFromPosition(pos, with_forTextSelection)
-    return self._document:getLinkFromPosition(pos.x, pos.y, with_forTextSelection)
+function CreDocument:getLinkFromPosition(pos)
+    return self._document:getLinkFromPosition(pos.x, pos.y)
 end
 
 function CreDocument:isLinkToFootnote(source_xpointer, target_xpointer, flags, max_text_size)
@@ -1175,6 +1175,11 @@ function CreDocument:setTextHyphenationForceAlgorithmic(toggle)
     self._document:setStringProperty("crengine.textlang.hyphenation.force.algorithmic", toggle and 1 or 0)
 end
 
+function CreDocument:setHungarianExtendedHyphenation(toggle)
+    logger.dbg("CreDocument: set Hungarian extended hyphenation", toggle)
+    self._document:setStringProperty("crengine.textlang.hyphenation.hungarian.extended", toggle and 1 or 0)
+end
+
 function CreDocument:getTextMainLangDefaultHyphDictionary()
     local main_lang_tag, main_lang_active_hyph_dict, loaded_lang_infos = cre.getTextLangStatus() -- luacheck: no unused
     return loaded_lang_infos[main_lang_tag] and loaded_lang_infos[main_lang_tag].hyph_dict_name
@@ -1301,11 +1306,6 @@ end
 function CreDocument:setFontKerning(mode)
     logger.dbg("CreDocument: set font kerning mode", mode)
     self._document:setIntProperty("font.kerning.mode", mode)
-end
-
-function CreDocument:setFontFractionalPositioning(strength)
-    logger.dbg("CreDocument: set font fractionalbpositioning", strength)
-    self._document:setIntProperty("font.fractional.positioning", strength)
 end
 
 function CreDocument:setWordSpacing(values)
