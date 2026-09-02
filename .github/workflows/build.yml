@@ -108,6 +108,9 @@ jobs:
           filter: tree:0
           show-progress: false
 
+      - name: Fetch upstream version tags
+        run: git fetch https://github.com/koreader/koreader.git --tags --force
+
       - name: Fetch
         run: make fetchthirdparty
 
