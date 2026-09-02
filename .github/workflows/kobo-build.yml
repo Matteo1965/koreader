@@ -27,6 +27,7 @@ jobs:
 
       - name: Apply Hungarian Kobo build 3 fixes
         run: |
+          sed -i 's/"it": "Sillabazione ungherese avanzata"/"it_IT": "Sillabazione ungherese avanzata"/' .github/scripts/apply_hungarian_kobo_build3.py
           python3 .github/scripts/apply_hungarian_kobo_build3.py
           grep -q 'Extended Hungarian hyphenation' frontend/apps/reader/modules/readertypography.lua
           grep -q 'huKnownFalseExtendedWord' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
