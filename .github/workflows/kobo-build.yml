@@ -1,6 +1,6 @@
 # Kobo build artifacts use the GitHub Actions run number as the canonical build number.
 name: Kobo build
-run-name: Kobo build #${{ github.run_number }} – Hungarian synthetic glyph spacing
+run-name: Kobo build #${{ github.run_number }} – Hungarian exact rendered-prefix measurement
 
 on:
   workflow_dispatch:
@@ -42,11 +42,12 @@ jobs:
           grep -q 'not config:has("hungarian_extended_hyphenation")' frontend/apps/reader/modules/readertypography.lua
           git diff --check
 
-      - name: Apply Hungarian synthetic glyph spacing fix
+      - name: Apply exact Hungarian rendered-prefix measurement
         run: |
-          python3 .github/scripts/apply_hungarian_kobo_build9.py
-          grep -q 'word->distinct_glyphs += hu_replacement_len' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
-          grep -q 'hu_replacement_len \* srcline->letter_spacing' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          python3 .github/scripts/apply_hungarian_kobo_build12.py
+          grep -q 'huRenderedPrefixWidth' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'candidate_width = rendered_prefix_width + _hyphen_width' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'word->width = rendered_prefix_width' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           git diff --check
 
       - name: Build Kobo package in official KOReader toolchain image
@@ -69,7 +70,7 @@ jobs:
       - name: Upload Kobo artifact
         uses: actions/upload-artifact@v7
         with:
-          name: Kobo-build-${{ github.run_number }}-Hungarian-synthetic-glyph-spacing
+          name: Kobo-build-${{ github.run_number }}-Hungarian-exact-rendered-prefix
           archive: false
           path: koreader-kobo-*.zip
           if-no-files-found: error
