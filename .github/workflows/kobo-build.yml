@@ -1,5 +1,6 @@
 # Kobo build artifacts use the GitHub Actions run number as the canonical build number.
 name: Kobo build
+run-name: Kobo build #${{ github.run_number }} – Hungarian synthetic glyph spacing
 
 on:
   workflow_dispatch:
@@ -41,7 +42,7 @@ jobs:
           grep -q 'not config:has("hungarian_extended_hyphenation")' frontend/apps/reader/modules/readertypography.lua
           git diff --check
 
-      - name: Apply Kobo build #9 synthetic glyph spacing fix
+      - name: Apply Hungarian synthetic glyph spacing fix
         run: |
           python3 .github/scripts/apply_hungarian_kobo_build9.py
           grep -q 'word->distinct_glyphs += hu_replacement_len' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
