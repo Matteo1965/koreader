@@ -40,6 +40,13 @@ jobs:
           grep -q 'not config:has("hungarian_extended_hyphenation")' frontend/apps/reader/modules/readertypography.lua
           git diff --check
 
+      - name: Apply Hungarian Kobo build 5 margin fix
+        run: |
+          python3 .github/scripts/apply_hungarian_kobo_build5.py
+          grep -q 'LCHAR_HUNGARIAN_HYPH_REPLACE) )' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'Ordinary KOReader hyphenation keeps its existing optical' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          git diff --check
+
       - name: Build Kobo package in official KOReader toolchain image
         run: |
           docker pull koreader/kokobo:latest
