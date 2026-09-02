@@ -40,11 +40,11 @@ jobs:
           grep -q 'not config:has("hungarian_extended_hyphenation")' frontend/apps/reader/modules/readertypography.lua
           git diff --check
 
-      - name: Apply Hungarian Kobo build 5 margin fix
+      - name: Apply Kobo build #9 synthetic glyph spacing fix
         run: |
-          python3 .github/scripts/apply_hungarian_kobo_build5.py
-          grep -q 'LCHAR_HUNGARIAN_HYPH_REPLACE) )' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
-          grep -q 'Ordinary KOReader hyphenation keeps its existing optical' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          python3 .github/scripts/apply_hungarian_kobo_build9.py
+          grep -q 'word->distinct_glyphs += hu_replacement_len' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'hu_replacement_len \* srcline->letter_spacing' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           git diff --check
 
       - name: Build Kobo package in official KOReader toolchain image
@@ -67,7 +67,7 @@ jobs:
       - name: Upload Kobo artifact
         uses: actions/upload-artifact@v7
         with:
-          name: koreader-kobo-${{ github.sha }}
+          name: Kobo-build-${{ github.run_number }}-Hungarian-synthetic-glyph-spacing
           archive: false
           path: koreader-kobo-*.zip
           if-no-files-found: error
