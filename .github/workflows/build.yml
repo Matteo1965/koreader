@@ -39,7 +39,7 @@ jobs:
       CLICOLOR_FORCE: '1'
       KODEBUG: ""
       MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment_target }}
-      MAKEFLAGS: OUTPUT_DIR=build PARALLEL_JOBS=${{ matrix.jobs }} INSTALL_DIR=install TARGET=macos
+      MAKEFLAGS: OUTPUT_DIR=build PARALLEL_JOBS=${{ matrix.jobs }} INSTALL_DIR=install TARGET=macos VERSION=v2026.07.2-1-g${{ github.sha }}
 
     steps:
 
@@ -107,11 +107,6 @@ jobs:
           fetch-depth: 0
           filter: tree:0
           show-progress: false
-
-      - name: Fetch upstream version tags
-        run: >
-          git fetch --no-filter https://github.com/koreader/koreader.git
-          +refs/tags/v2026.07.2:refs/tags/v2026.07.2
 
       - name: Fetch
         run: make fetchthirdparty
