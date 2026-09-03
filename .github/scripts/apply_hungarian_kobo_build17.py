@@ -128,34 +128,39 @@ lvrend.write_text(text, encoding="utf-8")
 
 # -----------------------------------------------------------------------------
 # 4) CREngine line preparation: for an opted-in paragraph beginning with an
-#    en dash (U+2013) or em dash (U+2014) followed by source whitespace:
+#    en dash (U+2013) or em dash (U+2014) followed by a regular source space:
 #      - forbid wrapping between dash and first word;
 #      - lock that one space so justification cannot stretch it.
 #    No text is rewritten, and there is no language check.
+#
+#    Insert after copyText() has normalized/collapsed spaces and set m_flags.
+#    This anchor exists in the current CREngine baseline and is deliberately
+#    independent from the Hungarian Build #3/#12/#13/#15/#16 patches.
 # -----------------------------------------------------------------------------
 lvtextfm = crroot / "src/lvtextfm.cpp"
 text = lvtextfm.read_text(encoding="utf-8")
-anchor = "    // Apply the same text transform that text-transform: full-width does\n"
+anchor = '        TR("%s", LCSTR(lString32(m_text, m_length)));\n\n'
 if text.count(anchor) != 1:
     raise SystemExit(f"dialogue line-fix insertion anchor: expected exactly one match, found {text.count(anchor)}")
-block = r'''    // Optional language-independent dialogue-line fix, enabled via
-    // Style tweaks > Paragraphs > Fix dialogue lines.
-    // Keep a paragraph-opening en/em dash and its following source space
-    // together, and prevent text justification from stretching that gap.
-    if ( m_length > 2 ) {
-        int dialogue_start = 0;
-        while ( dialogue_start < m_length &&
-                (m_flags[dialogue_start] & (LCHAR_IS_SPACE | LCHAR_COLLAPSED_SPACE | LCHAR_IS_TO_IGNORE)) )
-            dialogue_start++;
-        if ( dialogue_start + 1 < m_length && m_srcs[dialogue_start] &&
-             (m_srcs[dialogue_start]->flags & LTEXT_DIALOGUE_FIX) &&
-             (m_text[dialogue_start] == 0x2013 || m_text[dialogue_start] == 0x2014) &&
-             (m_flags[dialogue_start + 1] & LCHAR_IS_SPACE) ) {
-            m_flags[dialogue_start] &= ~LCHAR_ALLOW_WRAP_AFTER;
-            m_flags[dialogue_start + 1] &= ~LCHAR_ALLOW_WRAP_AFTER;
-            m_flags[dialogue_start + 1] |= LCHAR_LOCKED_SPACING;
+block = r'''        // Optional language-independent dialogue-line fix, enabled via
+        // Style tweaks > Paragraphs > Fix dialogue lines.
+        // Keep a paragraph-opening en/em dash and its following source space
+        // together, and prevent text justification from stretching that gap.
+        if ( m_length > 2 ) {
+            int dialogue_start = 0;
+            while ( dialogue_start < m_length &&
+                    (m_flags[dialogue_start] & (LCHAR_IS_SPACE | LCHAR_IS_COLLAPSED_SPACE)) )
+                dialogue_start++;
+            if ( dialogue_start + 1 < m_length && m_srcs[dialogue_start] &&
+                 (m_srcs[dialogue_start]->flags & LTEXT_DIALOGUE_FIX) &&
+                 (m_text[dialogue_start] == 0x2013 || m_text[dialogue_start] == 0x2014) &&
+                 (m_flags[dialogue_start + 1] & LCHAR_IS_SPACE) ) {
+                m_flags[dialogue_start] &= ~LCHAR_ALLOW_WRAP_AFTER;
+                m_flags[dialogue_start + 1] &= ~LCHAR_ALLOW_WRAP_AFTER;
+                m_flags[dialogue_start] |= LCHAR_LOCKED_SPACING;
+                m_flags[dialogue_start + 1] |= LCHAR_LOCKED_SPACING;
+            }
         }
-    }
 
 '''
 text = text.replace(anchor, block + anchor, 1)
@@ -185,4 +190,4 @@ append_po_entry(
     "frontend/ui/data/css_tweaks.lua",
 )
 
-print("Kobo build 17 dialogue-line and compact-menu patches applied successfully")
+print("Kobo build dialogue-line and compact-menu patches applied successfully")
