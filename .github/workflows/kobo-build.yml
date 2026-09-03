@@ -1,6 +1,6 @@
 # Kobo build artifacts use the GitHub Actions run number as the canonical build number.
 name: Kobo build
-run-name: Kobo build #${{ github.run_number }} – corrected CrossPoint Hungarian priority rules
+run-name: Kobo build #${{ github.run_number }} – Hungarian hyphenation fixes
 
 on:
   workflow_dispatch:
@@ -69,6 +69,17 @@ jobs:
           grep -q 'hu_source, hu_source_len, word->t.len-1' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           git diff --check
 
+      - name: Apply Hungarian Kobo build 16 language-priority fixes
+        run: |
+          HUNGARIAN_BUILD_NUMBER="${{ github.run_number }}" python3 .github/scripts/apply_hungarian_kobo_build16.py
+          grep -q 'hu_pattern_flags_all' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q '_hyphen_width, 0xFFFF, 2' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'replacement_len > 1' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          grep -q 'Extended Hungarian hyphenation") .. " #${{ github.run_number }}"' frontend/apps/reader/modules/readertypography.lua
+          grep -q 'hu_source, hu_source_len, word->t.len-1' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          ! grep -q '// bridzzsel' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          git diff --check
+
       - name: Build Kobo package in official KOReader toolchain image
         run: |
           docker pull koreader/kokobo:latest
@@ -80,16 +91,17 @@ jobs:
             koreader/kokobo:latest \
             bash -lc './kodev release --ignore-translation kobo zip'
 
-      - name: Verify Kobo package
+      - name: Rename and verify Kobo package
         run: |
           set -eux
-          ls -lh koreader-kobo-*.zip
-          unzip -l koreader-kobo-*.zip | head -80
+          mv koreader-kobo-*.zip "KOReader-Kobo-Hungarian-Build-${{ github.run_number }}-v2026.07.2.zip"
+          ls -lh "KOReader-Kobo-Hungarian-Build-${{ github.run_number }}-v2026.07.2.zip"
+          unzip -l "KOReader-Kobo-Hungarian-Build-${{ github.run_number }}-v2026.07.2.zip" | head -80
 
       - name: Upload Kobo artifact
         uses: actions/upload-artifact@v7
         with:
-          name: Kobo-build-${{ github.run_number }}-Corrected-CrossPoint-Hungarian-priority-rules
+          name: KOReader-Kobo-Hungarian-Build-${{ github.run_number }}
           archive: false
-          path: koreader-kobo-*.zip
+          path: KOReader-Kobo-Hungarian-Build-${{ github.run_number }}-v2026.07.2.zip
           if-no-files-found: error
