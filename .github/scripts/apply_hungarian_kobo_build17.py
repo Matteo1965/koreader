@@ -108,42 +108,82 @@ if count < 1:
 text = text.replace(old, new, 1)
 lvrend.write_text(text, encoding="utf-8")
 
+# Apply the dialogue fix where CREngine already finalizes spacing flags for the
+# first word. Build 18/19 applied it just after copyText(), but later text
+# measurement reconstructs the flags that justification actually consumes.
 lvtextfm = crroot / "src/lvtextfm.cpp"
 text = lvtextfm.read_text(encoding="utf-8")
-anchor = '        TR("%s", LCSTR(lString32(m_text, m_length)));\n\n'
-if text.count(anchor) != 1:
-    raise SystemExit(f"dialogue line-fix insertion anchor: expected exactly one match, found {text.count(anchor)}")
-block = r'''        // Optional language-independent dialogue-line fix, enabled via
-        // Style tweaks > Paragraphs > Fix dialogue lines.
-        // Recognize common dialogue-dash characters at paragraph start:
-        // hyphen-minus, figure dash, en dash, em dash, horizontal bar, minus sign.
-        // Keep the dash and its following source space together and prevent
-        // text justification from stretching that gap.
-        if ( m_length > 2 ) {
-            int dialogue_start = 0;
-            while ( dialogue_start < m_length &&
-                    (m_flags[dialogue_start] & (LCHAR_IS_SPACE | LCHAR_IS_COLLAPSED_SPACE)) )
-                dialogue_start++;
-            lChar32 dialogue_char = dialogue_start < m_length ? m_text[dialogue_start] : 0;
-            bool is_dialogue_dash = dialogue_char == 0x002D || // hyphen-minus
-                                    dialogue_char == 0x2012 || // figure dash
-                                    dialogue_char == 0x2013 || // en dash
-                                    dialogue_char == 0x2014 || // em dash
-                                    dialogue_char == 0x2015 || // horizontal bar
-                                    dialogue_char == 0x2212;   // minus sign
-            if ( dialogue_start + 1 < m_length && m_srcs[dialogue_start] &&
-                 (m_srcs[dialogue_start]->flags & LTEXT_DIALOGUE_FIX) &&
-                 is_dialogue_dash &&
-                 (m_flags[dialogue_start + 1] & LCHAR_IS_SPACE) ) {
-                m_flags[dialogue_start] &= ~LCHAR_ALLOW_WRAP_AFTER;
-                m_flags[dialogue_start + 1] &= ~LCHAR_ALLOW_WRAP_AFTER;
-                m_flags[dialogue_start] |= LCHAR_LOCKED_SPACING;
-                m_flags[dialogue_start + 1] |= LCHAR_LOCKED_SPACING;
-            }
-        }
-
+old = '''                                if ( first_word_len == 1 ) { // Previous word is a single char
+                                    if ( k > 0 && isLeftPunctuation(m_text[k-1]) ) {
+                                        // This space follows one of the common opening quotation marks or
+                                        // dashes used to introduce a quotation or a part of a dialog:
+                                        // https://en.wikipedia.org/wiki/Quotation_mark
+                                        // Don't allow this space to change width, so text justification
+                                        // doesn't move away next word, so that other similar paragraphs
+                                        // get their real first words vertically aligned.
+                                        flags[k] |= LCHAR_LOCKED_SPACING;
+                                        // Also prevent that quotation mark or dash from getting
+                                        // additional letter spacing for justification
+                                        flags[k-1] |= LCHAR_LOCKED_SPACING;
+                                        // If what's coming next is also such a char, continue doing that
+                                        if ( k+1 < len && isLeftPunctuation(m_text[k+1]) ) {
+                                            keep_checking = true;
+                                        }
+                                        //
+                                        // Note: we do this check here, with the text still in logical
+                                        // order, so we get that working with RTL text too (where, in
+                                        // visual order, we'll have lost track of which word is the
+                                        // first word - untested though).
+                                    }
+                                }
 '''
-text = text.replace(anchor, block + anchor, 1)
+new = '''                                if ( first_word_len == 1 ) { // Previous word is a single char
+                                    int first_char_pos = start + k - 1;
+                                    lChar32 dialogue_char = first_char_pos >= 0 ? m_text[first_char_pos] : 0;
+                                    bool is_dialogue_dash = dialogue_char == 0x002D || // hyphen-minus
+                                                            dialogue_char == 0x2012 || // figure dash
+                                                            dialogue_char == 0x2013 || // en dash
+                                                            dialogue_char == 0x2014 || // em dash
+                                                            dialogue_char == 0x2015 || // horizontal bar
+                                                            dialogue_char == 0x2212;   // minus sign
+                                    bool dialogue_fix_requested = false;
+                                    if ( is_dialogue_dash ) {
+                                        // The hint can live on the final block source fragment or on
+                                        // an inherited inline fragment. The formatter buffer contains
+                                        // only this paragraph, so accept the hint from either location.
+                                        for ( int si=0; si < m_pbuffer->srctextlen; si++ ) {
+                                            if ( m_pbuffer->srctext[si].flags & LTEXT_DIALOGUE_FIX ) {
+                                                dialogue_fix_requested = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if ( (k > 0 && isLeftPunctuation(m_text[k-1])) || dialogue_fix_requested ) {
+                                        // Lock at the formatter text-measurement stage, where the flags
+                                        // used by final justification are assembled.
+                                        flags[k] |= LCHAR_LOCKED_SPACING;
+                                        flags[k-1] |= LCHAR_LOCKED_SPACING;
+                                        if ( dialogue_fix_requested ) {
+                                            // Keep the opening dash and the following space together too.
+                                            m_flags[first_char_pos] &= ~LCHAR_ALLOW_WRAP_AFTER;
+                                            m_flags[start+k] &= ~LCHAR_ALLOW_WRAP_AFTER;
+                                            flags[k] &= ~LCHAR_ALLOW_WRAP_AFTER;
+                                        }
+                                        // Preserve CREngine's existing handling of repeated opening punctuation.
+                                        if ( k+1 < len && isLeftPunctuation(m_text[k+1]) ) {
+                                            keep_checking = true;
+                                        }
+                                        //
+                                        // Note: we do this check here, with the text still in logical
+                                        // order, so we get that working with RTL text too (where, in
+                                        // visual order, we'll have lost track of which word is the
+                                        // first word - untested though).
+                                    }
+                                }
+'''
+if text.count(old) != 1:
+    raise SystemExit(f"formatter dialogue integration anchor: expected exactly one match, found {text.count(old)}")
+text = text.replace(old, new, 1)
 lvtextfm.write_text(text, encoding="utf-8")
 
 append_po_entry(
@@ -165,4 +205,4 @@ append_po_entry(
     "frontend/ui/data/css_tweaks.lua",
 )
 
-print("Kobo build dialogue-line and compact-menu patches applied successfully")
+print("Kobo formatter-stage dialogue-line and compact-menu patches applied successfully")
