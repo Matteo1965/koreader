@@ -83,15 +83,18 @@ jobs:
       - name: Apply Kobo build 17 dialogue-line and compact-menu fixes
         run: |
           HUNGARIAN_BUILD_NUMBER="${{ github.run_number }}" python3 .github/scripts/apply_hungarian_kobo_build17.py
+          python3 .github/scripts/apply_hungarian_kobo_build17_finalize.py
           grep -q 'method = _("Extended Hungarian")' frontend/apps/reader/modules/readertypography.lua
           grep -q 'Extended Hungarian hyphenation") .. " #${{ github.run_number }}"' frontend/apps/reader/modules/readertypography.lua
           grep -q 'paragraph_dialogue_fix' frontend/ui/data/css_tweaks.lua
           grep -q 'dialogue-fix' frontend/ui/data/css_tweaks.lua
           grep -R -q 'CSS_CR_HINT_DIALOGUE_FIX' base/thirdparty/kpvcrlib/crengine/crengine/include
+          grep -R -q 'CSS_CR_HINT_INHERITABLE_MASK        0x0000004E' base/thirdparty/kpvcrlib/crengine/crengine/include
           grep -q 'LTEXT_DIALOGUE_FIX' base/thirdparty/kpvcrlib/crengine/crengine/include/lvtextfm.h
           grep -q 'm_text\[dialogue_start\] == 0x2013' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           grep -q 'm_text\[dialogue_start\] == 0x2014' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           grep -q 'LCHAR_LOCKED_SPACING' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
+          ! grep -q 'LCHAR_IS_TO_IGNORE' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           grep -q 'hu_source, hu_source_len, word->t.len-1' base/thirdparty/kpvcrlib/crengine/crengine/src/lvtextfm.cpp
           git diff --check
 
