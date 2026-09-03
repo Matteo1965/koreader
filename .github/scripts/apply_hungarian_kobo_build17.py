@@ -27,10 +27,6 @@ build_number = os.environ.get("HUNGARIAN_BUILD_NUMBER", "").strip()
 if not build_number:
     raise SystemExit("HUNGARIAN_BUILD_NUMBER is required")
 
-# -----------------------------------------------------------------------------
-# 1) Typography menu: keep the full build-tagged label inside the submenu,
-#    but use a compact localized summary on the parent Typography rules page.
-# -----------------------------------------------------------------------------
 lua = "frontend/apps/reader/modules/readertypography.lua"
 replace_once(
     lua,
@@ -39,10 +35,6 @@ replace_once(
     "compact Extended Hungarian summary",
 )
 
-# -----------------------------------------------------------------------------
-# 2) Style tweaks UI: expose the dialogue fix as an opt-in paragraph tweak.
-#    The CSS hint is intentionally language-independent.
-# -----------------------------------------------------------------------------
 css_tweaks = "frontend/ui/data/css_tweaks.lua"
 paragraph_anchor = '''    {
         title = _("Paragraphs"),
@@ -54,7 +46,7 @@ paragraph_replacement = '''    {
         {
             id = "paragraph_dialogue_fix",
             title = _("Fix dialogue lines"),
-            description = _([[Keep the space after a paragraph-opening en dash or em dash fixed and unbreakable.
+            description = _([[Keep the space after a paragraph-opening dialogue dash fixed and unbreakable.
 This prevents the opening dialogue dash from being left alone at the end of a line and keeps the gap from stretching in justified text.]]),
             css = [[p { -cr-hint: dialogue-fix; }]],
             separator = true,
@@ -64,14 +56,7 @@ This prevents the opening dialogue dash from being left alone at the end of a li
 '''
 replace_once(css_tweaks, paragraph_anchor, paragraph_replacement, "dialogue Style tweak")
 
-# -----------------------------------------------------------------------------
-# 3) CREngine CSS hint and source-fragment flag.
-#    Use currently-unused bits so existing KOReader/CREngine behaviour is untouched
-#    when the Style tweak is disabled.
-# -----------------------------------------------------------------------------
 crroot = Path("base/thirdparty/kpvcrlib/crengine/crengine")
-
-# Locate the header that owns the existing CR hint bit definitions.
 hint_header = None
 for candidate in (crroot / "include").glob("*.h"):
     data = candidate.read_text(encoding="utf-8")
@@ -101,7 +86,6 @@ if old_flag not in flags:
     raise SystemExit("Available LTEXT bit 23 marker not found")
 lvtextfm_h.write_text(flags.replace(old_flag, new_flag, 1), encoding="utf-8")
 
-# Teach -cr-hint parser about dialogue-fix.
 lvstsheet = crroot / "src/lvstsheet.cpp"
 text = lvstsheet.read_text(encoding="utf-8")
 old = '                        else if ( substr_icompare("cjk-tailored", decl) )           hints |= CSS_CR_HINT_CJK_TAILORED;\n'
@@ -110,7 +94,6 @@ if text.count(old) != 1:
     raise SystemExit(f"dialogue CR hint parser anchor: expected exactly one match, found {text.count(old)}")
 lvstsheet.write_text(text.replace(old, new, 1), encoding="utf-8")
 
-# Propagate the block-level CR hint into formatted-text source fragments.
 lvrend = crroot / "src/lvrend.cpp"
 text = lvrend.read_text(encoding="utf-8")
 old = '''            if ( STYLE_HAS_CR_HINT(style, STRUT_CONFINED) )
@@ -122,21 +105,9 @@ new = old + '''            if ( STYLE_HAS_CR_HINT(style, DIALOGUE_FIX) )
 count = text.count(old)
 if count < 1:
     raise SystemExit("CRE render hint propagation anchor not found")
-# The first occurrence is the final-block setup that seeds flags inherited by inline fragments.
 text = text.replace(old, new, 1)
 lvrend.write_text(text, encoding="utf-8")
 
-# -----------------------------------------------------------------------------
-# 4) CREngine line preparation: for an opted-in paragraph beginning with an
-#    en dash (U+2013) or em dash (U+2014) followed by a regular source space:
-#      - forbid wrapping between dash and first word;
-#      - lock that one space so justification cannot stretch it.
-#    No text is rewritten, and there is no language check.
-#
-#    Insert after copyText() has normalized/collapsed spaces and set m_flags.
-#    This anchor exists in the current CREngine baseline and is deliberately
-#    independent from the Hungarian Build #3/#12/#13/#15/#16 patches.
-# -----------------------------------------------------------------------------
 lvtextfm = crroot / "src/lvtextfm.cpp"
 text = lvtextfm.read_text(encoding="utf-8")
 anchor = '        TR("%s", LCSTR(lString32(m_text, m_length)));\n\n'
@@ -144,16 +115,25 @@ if text.count(anchor) != 1:
     raise SystemExit(f"dialogue line-fix insertion anchor: expected exactly one match, found {text.count(anchor)}")
 block = r'''        // Optional language-independent dialogue-line fix, enabled via
         // Style tweaks > Paragraphs > Fix dialogue lines.
-        // Keep a paragraph-opening en/em dash and its following source space
-        // together, and prevent text justification from stretching that gap.
+        // Recognize common dialogue-dash characters at paragraph start:
+        // hyphen-minus, figure dash, en dash, em dash, horizontal bar, minus sign.
+        // Keep the dash and its following source space together and prevent
+        // text justification from stretching that gap.
         if ( m_length > 2 ) {
             int dialogue_start = 0;
             while ( dialogue_start < m_length &&
                     (m_flags[dialogue_start] & (LCHAR_IS_SPACE | LCHAR_IS_COLLAPSED_SPACE)) )
                 dialogue_start++;
+            lChar32 dialogue_char = dialogue_start < m_length ? m_text[dialogue_start] : 0;
+            bool is_dialogue_dash = dialogue_char == 0x002D || // hyphen-minus
+                                    dialogue_char == 0x2012 || // figure dash
+                                    dialogue_char == 0x2013 || // en dash
+                                    dialogue_char == 0x2014 || // em dash
+                                    dialogue_char == 0x2015 || // horizontal bar
+                                    dialogue_char == 0x2212;   // minus sign
             if ( dialogue_start + 1 < m_length && m_srcs[dialogue_start] &&
                  (m_srcs[dialogue_start]->flags & LTEXT_DIALOGUE_FIX) &&
-                 (m_text[dialogue_start] == 0x2013 || m_text[dialogue_start] == 0x2014) &&
+                 is_dialogue_dash &&
                  (m_flags[dialogue_start + 1] & LCHAR_IS_SPACE) ) {
                 m_flags[dialogue_start] &= ~LCHAR_ALLOW_WRAP_AFTER;
                 m_flags[dialogue_start + 1] &= ~LCHAR_ALLOW_WRAP_AFTER;
@@ -166,11 +146,6 @@ block = r'''        // Optional language-independent dialogue-line fix, enabled 
 text = text.replace(anchor, block + anchor, 1)
 lvtextfm.write_text(text, encoding="utf-8")
 
-# -----------------------------------------------------------------------------
-# 5) Hungarian localization for the new compact summary and Style tweak.
-#    English is the msgid/fallback. Existing full Extended Hungarian label stays
-#    untouched, so Build #16's #<run> suffix remains visible inside the submenu.
-# -----------------------------------------------------------------------------
 append_po_entry(
     "l10n/hu/koreader.po",
     "Extended Hungarian",
@@ -185,8 +160,8 @@ append_po_entry(
 )
 append_po_entry(
     "l10n/hu/koreader.po",
-    "Keep the space after a paragraph-opening en dash or em dash fixed and unbreakable.\\nThis prevents the opening dialogue dash from being left alone at the end of a line and keeps the gap from stretching in justified text.",
-    "A bekezdést nyitó nagykötőjel vagy gondolatjel utáni szóközt rögzített szélességűvé és nem törhetővé teszi.\\nÍgy a párbeszédjel nem marad egyedül a sor végén, és sorkizárt szövegben sem nyúlik meg az utána következő szóköz.",
+    "Keep the space after a paragraph-opening dialogue dash fixed and unbreakable.\\nThis prevents the opening dialogue dash from being left alone at the end of a line and keeps the gap from stretching in justified text.",
+    "A bekezdést nyitó párbeszédjel utáni szóközt rögzített szélességűvé és nem törhetővé teszi.\\nÍgy a párbeszédjel nem marad egyedül a sor végén, és sorkizárt szövegben sem nyúlik meg az utána következő szóköz.",
     "frontend/ui/data/css_tweaks.lua",
 )
 
