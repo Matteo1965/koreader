@@ -47,15 +47,4 @@ if text.count(old) != 1:
     raise SystemExit(f"inline dialogue hint propagation anchor: expected exactly one match, found {text.count(old)}")
 lvrend.write_text(text.replace(old, new, 1), encoding="utf-8")
 
-# The first Build #17 draft also skipped an optional internal ignore flag while
-# locating the first visible character. Keep the first build conservative and
-# depend only on the established space flags used by lvtextfm.
-lvtextfm = crroot / "src/lvtextfm.cpp"
-text = lvtextfm.read_text(encoding="utf-8")
-old = "LCHAR_IS_SPACE | LCHAR_COLLAPSED_SPACE | LCHAR_IS_TO_IGNORE"
-new = "LCHAR_IS_SPACE | LCHAR_COLLAPSED_SPACE"
-if text.count(old) != 1:
-    raise SystemExit(f"dialogue-start flag cleanup: expected exactly one match, found {text.count(old)}")
-lvtextfm.write_text(text.replace(old, new, 1), encoding="utf-8")
-
-print("Kobo build 17 dialogue fix hardening applied successfully")
+print("Kobo dialogue fix hardening applied successfully")
